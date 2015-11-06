@@ -9,7 +9,6 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.TextNode;
 import org.springframework.stereotype.Component;
 
-import java.net.URL;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -28,7 +27,7 @@ public class ReadabilityExtractor extends AbstractExtractor {
 
     static {
         REGEXPS.put("unlikelyCandidates", Pattern.compile("banner|combx|comment|community|disqus|extra|foot|header|" +
-                "menu|related|remark|rss|share|shoutbox|sidebar|skyscraper|sponsor|ad-break|agegate|pagination|pager|popup"));
+                "menu|related|remark|rss|share|shoutbox|sidebar|skyscraper|sponsor|ad-break|agegate|pagination|pager|popup|nav|navbar"));
         REGEXPS.put("okMaybeItsACandidate", Pattern.compile("and|article|body|column|main|shadow"));
         REGEXPS.put("positive", Pattern.compile("article|body|content|entry|hentry|main|page|pagination|post|text|blog|story"));
         REGEXPS.put("negative", Pattern.compile("hidden|banner|combx|comment|com-|contact|foot|footer|footnote|masthead|media|" +
@@ -66,27 +65,16 @@ public class ReadabilityExtractor extends AbstractExtractor {
         DIV_TO_P_ELEMS.add("select");
     }
 
-    public static void main(String[] args) throws Exception {
-        Document doc = Jsoup.parse(new URL("http://localhost:3000"), 1000);
-
-
-        System.out.println(doc);
-
-        ReadabilityExtractor extractor = new ReadabilityExtractor();
-        extractor.parse(doc);
-
-        System.out.println(doc);
-    }
-
     private static void removeElementByTag(Element element, String tag) {
         element.getElementsByTag(tag).forEach(node -> node.remove());
     }
 
-    private static void setNodeTag(Element element, String tag) {
+    private static Element setNodeTag(Element element, String tag) {
         Element replacement = element.ownerDocument().createElement(tag);
         replacement.html(element.html());
         element.attributes().forEach(attr -> replacement.attr(attr.getKey(), attr.getValue()));
         element.replaceWith(replacement);
+        return replacement;
     }
 
     private static boolean isEmpty(String str) {
@@ -108,9 +96,6 @@ public class ReadabilityExtractor extends AbstractExtractor {
         Element node = body;
         while (node != null) {
             String matchString = node.className() + " " + node.id();
-
-            System.out.println("________" + matchString);
-
             if (REGEXPS.get("unlikelyCandidates").matcher(matchString).find() &&
                     !REGEXPS.get("okMaybeItsACandidate").matcher(matchString).find() &&
                     !"body".equalsIgnoreCase(node.tagName()) &&
@@ -127,14 +112,16 @@ public class ReadabilityExtractor extends AbstractExtractor {
                 if (node.children().size() == 1 && "p".equalsIgnoreCase(node.child(0).tagName())) {
                     node.replaceWith(node.child(0));
                 } else if (!hasChildBlockElement(node)) {
-                    setNodeTag(node, "p");
+                    node = setNodeTag(node, "p");
                     elementsToScore.add(node);
                 } else {
                     node.childNodes().forEach(childNode -> {
                         if (childNode instanceof TextNode) {
-                            Element p = childNode.ownerDocument().createElement("p");
-                            p.html(childNode.nextSibling().toString());
-                            childNode.replaceWith(p);
+                            if (!"".equals(childNode.outerHtml().trim())) {
+                                Element p = childNode.ownerDocument().createElement("p");
+                                p.html(childNode.outerHtml());
+                                childNode.replaceWith(p);
+                            }
                         }
                     });
                 }
@@ -163,12 +150,10 @@ public class ReadabilityExtractor extends AbstractExtractor {
         if (node.nextElementSibling() != null) {
             return node.nextElementSibling();
         }
-        System.out.println("#######:" + node.html());
         do {
             node = node.parent();
         } while (node != null && node.nextElementSibling() == null);
-        System.out.println("3333333:" + node.nextElementSibling());
-        return node.nextElementSibling() == null ? node : node.nextElementSibling();
+        return node == null ? null : node.nextElementSibling();
     }
 
 
