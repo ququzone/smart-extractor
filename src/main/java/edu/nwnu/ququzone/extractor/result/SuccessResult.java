@@ -6,20 +6,20 @@ package edu.nwnu.ququzone.extractor.result;
  * @author Yang XuePing
  */
 public class SuccessResult extends Result {
+    private final String title;
     private final String html;
-    private final String text;
 
-    public SuccessResult(String html, String text) {
+    public SuccessResult(String title, String html) {
         super(true);
+        this.title = title;
         this.html = html;
-        this.text = text;
+    }
+
+    public String getTitle() {
+        return title;
     }
 
     public String getHtml() {
         return html;
-    }
-
-    public String getText() {
-        return text;
     }
 }
