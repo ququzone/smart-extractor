@@ -7,6 +7,7 @@ import edu.nwnu.ququzone.extractor.result.FailureResult;
 import edu.nwnu.ququzone.extractor.result.Result;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.mozilla.universalchardet.UniversalDetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +56,9 @@ public abstract class AbstractExtractor implements Extractor {
         try {
             Response response = client.newCall(request).execute();
             if (response.isSuccessful()) {
-                return Jsoup.parse(response.body().string());
+                byte[] data = response.body().bytes();
+                String encoding = detectEncoding(data);
+                return Jsoup.parse(new String(data, encoding), url);
             } else {
                 throw new RuntimeException(String.format("get %s document error", url));
             }
@@ -63,5 +66,17 @@ public abstract class AbstractExtractor implements Extractor {
             LOG.error("fetch document error:" + url, e);
         }
         return null;
+    }
+
+    protected String detectEncoding(byte[] data) {
+        UniversalDetector detector = new UniversalDetector(null);
+        detector.handleData(data, 0, data.length);
+        detector.dataEnd();
+        String encoding = detector.getDetectedCharset();
+        detector.reset();
+        if (encoding == null) {
+            encoding = "UTF-8";
+        }
+        return encoding;
     }
 }

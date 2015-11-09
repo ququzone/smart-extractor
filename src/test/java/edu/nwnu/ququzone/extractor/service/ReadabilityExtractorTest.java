@@ -14,15 +14,10 @@ import java.net.URL;
 public class ReadabilityExtractorTest {
     @Test
     public void testCrawl() throws Exception {
-        Document doc = Jsoup.parse(ReadabilityExtractorTest.class.getClassLoader().getResourceAsStream("test.html"), "UTF-8", "http://333/");
-
+        Document doc = Jsoup.parse(ReadabilityExtractorTest.class.getClassLoader().getResourceAsStream("test.html"), "UTF-8", "/");
         // Document doc = Jsoup.parse(new URL("http://192.168.1.102:3000"), 2000);
-
-        System.out.println(doc);
 
         ReadabilityExtractor extractor = new ReadabilityExtractor();
         extractor.parse(doc);
-
-        System.out.println("1:::::::" + doc);
     }
 }

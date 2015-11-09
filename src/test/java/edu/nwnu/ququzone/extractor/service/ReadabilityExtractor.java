@@ -3,7 +3,6 @@ package edu.nwnu.ququzone.extractor.service;
 import edu.nwnu.ququzone.extractor.result.FailureResult;
 import edu.nwnu.ququzone.extractor.result.Result;
 import edu.nwnu.ququzone.extractor.result.SuccessResult;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.TextNode;
@@ -84,15 +83,22 @@ public class ReadabilityExtractor extends AbstractExtractor {
     private static String getArticleTitle(Document doc) {
         String title = doc.title();
         if (isEmpty(title)) {
-            title = doc.getElementsByTag("h1").text();
+            title = doc.select("head title").text().trim();
+            if (title.isEmpty()) {
+                title = doc.select("head meta[name=title]").attr("content").trim();
+                if (title.isEmpty()) {
+                    title = doc.select("head meta[property=og:title]").attr("content").trim();
+                    if (title.isEmpty()) {
+                        title = doc.getElementsByTag("h1").text();
+                    }
+                }
+            }
         }
         return title;
     }
 
     private static String grabArticle(Element body) {
-        String pageCacheHtml = body.html();
-
-        List<Element> elementsToScore = new ArrayList<>();
+        List<Element> elementsToScore = new LinkedList<>();
         Element node = body;
         while (node != null) {
             String matchString = node.className() + " " + node.id();
@@ -129,7 +135,45 @@ public class ReadabilityExtractor extends AbstractExtractor {
             node = getNextNode(node, false);
         }
 
+        final List<Element> candidates = new LinkedList<>();
+        elementsToScore.forEach(elementToScore -> {
+            if (elementToScore.parent() == null || isEmpty(elementToScore.parent().tagName())) {
+                return;
+            }
+            String innerText = getInnerText(elementToScore, true);
+            if (innerText.length() < 10) {
+                return;
+            }
+            List<Element> ancestors = getNodeAncestors(elementToScore, 3);
+            if (ancestors.size() == 0) {
+                return;
+            }
+            int contentScore = 0;
+            contentScore += 1;
+            contentScore += innerText.split(",").length;
+            contentScore += Math.min(innerText.length() / 100, 3);
+
+
+        });
+
         return "";
+    }
+
+    private static List<Element> getNodeAncestors(Element node, int maxDepth) {
+        int i = 0;
+        List<Element> ancestors = new LinkedList<>();
+        while (node.parent() != null) {
+            ancestors.add(node.parent());
+            if (++i == maxDepth)
+                break;
+            node = node.parent();
+        }
+        return ancestors;
+    }
+
+    private static String getInnerText(Element node, boolean normalizeSpaces) {
+        String textContent = node.text().trim();
+        return normalizeSpaces ? textContent.replaceAll(REGEXPS.get("normalize").pattern(), " ") : textContent;
     }
 
     private static boolean hasChildBlockElement(Element node) {
@@ -155,7 +199,6 @@ public class ReadabilityExtractor extends AbstractExtractor {
         } while (node != null && node.nextElementSibling() == null);
         return node == null ? null : node.nextElementSibling();
     }
-
 
     @Override
     protected Result parse(Document doc) {
