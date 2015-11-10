@@ -27,3 +27,12 @@ A micro-service for extract main content from url.
 	```
 	$ curl -i -X GET http://localhost:8080/extract\?url\=https://medium.com/@benjaminhardy/8-things-every-person-should-do-before-8-a-m-cc0233e15c8d
 	```
+
+### Build Docker Image
+
+	```
+	mvn clean package
+	mvn package docker:build
+	```
+
+	
