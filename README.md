@@ -30,9 +30,5 @@ A micro-service for extract main content from url.
 
 ### Build Docker Image
 
-	```
-	mvn clean package
-	mvn package docker:build
-	```
-
-	
+	$ mvn clean package
+	$ mvn package docker:build
