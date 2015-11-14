@@ -153,7 +153,7 @@ public class ReadabilityExtractor extends AbstractExtractor {
             contentScore += innerText.split(",").length;
             contentScore += Math.min(innerText.length() / 100, 3);
 
-
+            // TODO
         });
 
         return "";

@@ -17,7 +17,7 @@ A micro-service for extract main content from url.
 
 	```
 	$ java -jar target/smart-extractor.jar
-  $ open http://localhost:8080
+	$ open http://localhost:8080
 	```
 
 ### API
